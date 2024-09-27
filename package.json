@@ -9,7 +9,10 @@
   },
   "license": "MIT",
   "homepage": "",
-  "repository": "badabing2005/joplin-plugin-insert-youtube-video",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/badabing2005/joplin-plugin-ytinsert.git"
+  },
   "keywords": [
     "joplin-plugin"
   ],
