@@ -6,8 +6,14 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      tags:
-        description: 'Build tags'
+      action:
+        description: 'Choose action'
+        required: true
+        default: 'build-only'
+        type: choice
+        options:
+          - build-only
+          - build-and-publish
 
 jobs:
   build:
@@ -17,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout/@v4
+        uses: actions/checkout@v4
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -51,6 +57,12 @@ jobs:
           cd ./publish
           zip -r ./${{ env.VALUE_NAME }}_v${{ env.VALUE_VERSION }}.zip ./${{ env.VALUE_ID }}.jpl
 
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./publish
+
       - name: Create ChangeLog Text
         id: changelog_text
         uses: loopwerk/tag-changelog@v1
@@ -71,13 +83,20 @@ jobs:
         continue-on-error: true
 
   publish:
+    if: github.event.inputs.action == 'build-and-publish' && github.actor == 'badabing2005'
     needs: build
     runs-on: ubuntu-latest
     name: Publish
 
     steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./publish
+
       - name: Checkout Code
-        uses: actions/checkout/@v4
+        uses: actions/checkout@v4
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -92,9 +111,6 @@ jobs:
 
       - name: Set npm Auth Token
         run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
-
-      - name: Debug NPM Config
-        run: npm config ls
 
       - name: Publish to npm
         run: npm publish
