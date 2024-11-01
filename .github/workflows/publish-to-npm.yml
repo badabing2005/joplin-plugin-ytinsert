@@ -33,13 +33,17 @@ jobs:
         run: |
           cd publish
           unzip ${{ env.ASSET_NAME }} -d .
-          ls -l
           rm -f ${{ env.ASSET_NAME }}
+          ls -l
+          cd ..
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
 
       - name: Set npm Registry URL
         run: npm config set registry https://registry.npmjs.org/
@@ -51,6 +55,4 @@ jobs:
         run: npm config ls
 
       - name: Publish to npm
-        run: |
-          cd publish
-          npm publish . --access public
+        run: npm publish
