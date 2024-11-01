@@ -23,13 +23,15 @@ jobs:
             echo "ASSET_NAME=$asset_name" >> $GITHUB_ENV
             release_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/${tag_name}")
             asset_id=$(echo "$release_info" | jq -r ".assets[] | select(.name == \"$asset_name\") | .id")
+            echo "Asset ID: $asset_id"
             download_url=$(echo "$release_info" | jq -r ".assets[] | select(.id == $asset_id) | .url")
+            echo "Download URL: $download_url"
             curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o ./publish/$asset_name "$download_url"
+            ls -lR .
 
       - name: Unzip Artifacts
         run: |
           cd publish
-          ls -l
           unzip ${{ env.ASSET_NAME }} -d .
           ls -l
           rm -f ${{ env.ASSET_NAME }}
