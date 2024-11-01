@@ -3,23 +3,16 @@ name: node-build-release
 on:
   push:
     tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      action:
-        description: 'Choose action'
-        required: true
-        default: 'build-only'
-        type: choice
-        options:
-          - build-only
-          - build-and-publish
+      - 'v*'  # Triggers on tag pushes to build and create draft release
+  release:
+    types: [published]  # Triggers when a draft is published to npm
+  workflow_dispatch:  # Allows manual trigger for other actions if needed
 
 jobs:
-  build:
+  build-and-draft-release:
     if: github.actor == 'badabing2005'
     runs-on: ubuntu-latest
-    name: Build
+    name: Build and Draft Release
 
     steps:
       - name: Checkout Code
@@ -34,23 +27,19 @@ jobs:
         run: npm ci
 
       - name: Build Package
-        run: |
-          npm run dist
+        run: npm run dist
 
       - name: Get Name
         id: get_name
-        run: |
-          echo "VALUE_NAME=$(node -p "require('./package.json').name")" >> $GITHUB_ENV
+        run: echo "VALUE_NAME=$(node -p "require('./package.json').name")" >> $GITHUB_ENV
 
       - name: Get Version
         id: get_version
-        run: |
-          echo "VALUE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+        run: echo "VALUE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Get Id
         id: get_id
-        run: |
-          echo "VALUE_ID=$(node -p "require('./src/manifest.json').id")" >> $GITHUB_ENV
+        run: echo "VALUE_ID=$(node -p "require('./src/manifest.json').id")" >> $GITHUB_ENV
 
       - name: Create Zip File
         run: |
@@ -70,7 +59,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config_file: .github/scripts/tag-changelog-config.js
 
-      - name: Create Release
+      - name: Create Draft Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -80,17 +70,16 @@ jobs:
           files: |
             ./publish/${{ env.VALUE_NAME }}_v${{ env.VALUE_VERSION }}.zip
           body: ${{ steps.changelog_text.outputs.changes }}
-        continue-on-error: true
 
   publish:
-    if: github.event.inputs.action == 'build-and-publish' && github.actor == 'badabing2005'
-    needs: build
+    if: github.event.action == 'published' && github.actor == 'badabing2005'
+    needs: build-and-draft-release
     runs-on: ubuntu-latest
-    name: Publish
+    name: Publish to npm
 
     steps:
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: ./publish
