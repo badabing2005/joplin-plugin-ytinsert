@@ -17,8 +17,10 @@ jobs:
       - name: Download Release Assets
         id: download_assets
         run: |
+            mkdir -p ./publish
             tag_name=${{ github.event.release.tag_name }}
             asset_name="joplin-plugin-insert-youtube-video_${tag_name}.zip"
+            echo "ASSET_NAME=$asset_name" >> $GITHUB_ENV
             release_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/${tag_name}")
             asset_id=$(echo "$release_info" | jq -r ".assets[] | select(.name == \"$asset_name\") | .id")
             download_url=$(echo "$release_info" | jq -r ".assets[] | select(.id == $asset_id) | .url")
@@ -27,7 +29,10 @@ jobs:
       - name: Unzip Artifacts
         run: |
           cd publish
-          unzip build-artifacts.zip
+          ls -l
+          unzip ./publish/${{ env.ASSET_NAME }} -d ./publish
+          ls -l
+          rm -f ./publish/${{ env.ASSET_NAME }}
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
