@@ -1,15 +1,18 @@
-name: node-build-release
+name: Build and Draft Release
 
 on:
   push:
     tags:
-      - 'v*'  # Triggers on tag push to build and create draft release
-  release:
-    types: [published]  # Triggers only on draft being released, and published to npm
-  workflow_dispatch:  # Allows manual trigger if needed
+    - 'v*'
+
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Build tags'
+
 
 jobs:
-  build-and-draft-release:
+  build-and-draft:
     if: github.actor == 'badabing2005'
     runs-on: ubuntu-latest
     name: Build and Draft Release
@@ -70,35 +73,3 @@ jobs:
           files: |
             ./publish/${{ env.VALUE_NAME }}_v${{ env.VALUE_VERSION }}.zip
           body: ${{ steps.changelog_text.outputs.changes }}
-
-  publish:
-    if: github.event.action == 'published' && github.actor == 'badabing2005'
-    runs-on: ubuntu-latest
-    name: Publish to npm
-
-    steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: ./publish
-
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Set npm Registry URL
-        run: npm config set registry https://registry.npmjs.org/
-
-      - name: Set npm Auth Token
-        run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm
-        run: npm publish
