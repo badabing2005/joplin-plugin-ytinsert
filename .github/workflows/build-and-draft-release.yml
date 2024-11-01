@@ -5,9 +5,6 @@ on:
     tags:
       - 'v*'
 
-  release:
-    types: [published]  # Triggered when a draft release is published
-
   workflow_dispatch:
     inputs:
       tags:
@@ -73,39 +70,3 @@ jobs:
             ./publish/${{ env.VALUE_NAME }}_v${{ env.VALUE_VERSION }}.zip
           body: ${{ steps.changelog_text.outputs.changes }}
 
-  publish:
-    if: github.event_name == 'release' && github.event.action == 'published'
-    runs-on: ubuntu-latest
-    name: Publish to npm
-
-    steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: ./publish
-
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Set npm Registry URL
-        run: npm config set registry https://registry.npmjs.org/
-
-      - name: Set npm Auth Token
-        run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
-
-      - name: Debug NPM Config
-        run: npm config ls
-
-      - name: Publish to npm
-        run: |
-          cd publish
-          npm publish . --access public

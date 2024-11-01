@@ -1,0 +1,49 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    if: github.actor == 'badabing2005'
+    runs-on: ubuntu-latest
+    name: Publish to npm
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Release Assets
+        id: download_assets
+        run: |
+            tag_name=${{ github.event.release.tag_name }}
+            asset_name="joplin-plugin-insert-youtube-video_${tag_name}.zip"
+            release_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/${tag_name}")
+            asset_id=$(echo "$release_info" | jq -r ".assets[] | select(.name == \"$asset_name\") | .id")
+            download_url=$(echo "$release_info" | jq -r ".assets[] | select(.id == $asset_id) | .url")
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o ./publish/$asset_name "$download_url"
+
+      - name: Unzip Artifacts
+        run: |
+          cd publish
+          unzip build-artifacts.zip
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set npm Registry URL
+        run: npm config set registry https://registry.npmjs.org/
+
+      - name: Set npm Auth Token
+        run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
+
+      - name: Debug NPM Config
+        run: npm config ls
+
+      - name: Publish to npm
+        run: |
+          cd publish
+          npm publish . --access public
