@@ -24,10 +24,10 @@ jobs:
             release_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/${tag_name}")
             asset_id=$(echo "$release_info" | jq -r ".assets[] | select(.name == \"$asset_name\") | .id")
             echo "Asset ID: $asset_id"
-            download_url=$(echo "$release_info" | jq -r ".assets[] | select(.id == $asset_id) | .url")
+            download_url=$(echo "$release_info" | jq -r ".assets[] | select(.id == $asset_id) | .browser_download_url")
             echo "Download URL: $download_url"
             curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o ./publish/$asset_name "$download_url"
-            ls -lR .
+            ls -lR ./publish
 
       - name: Unzip Artifacts
         run: |
