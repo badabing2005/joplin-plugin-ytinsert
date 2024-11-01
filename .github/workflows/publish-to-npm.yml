@@ -30,9 +30,9 @@ jobs:
         run: |
           cd publish
           ls -l
-          unzip ./publish/${{ env.ASSET_NAME }} -d ./publish
+          unzip ${{ env.ASSET_NAME }} -d .
           ls -l
-          rm -f ./publish/${{ env.ASSET_NAME }}
+          rm -f ${{ env.ASSET_NAME }}
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
