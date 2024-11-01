@@ -19,6 +19,13 @@ The format of the inserted link is: (where 0I_OPQQiYVU is the id of the video)
 
 ![Screenshot](/screenshot.png)
 
+## Settings
+
+There are two configurable options.
+1. Position of the title text relative to the video link (top | bottom)
+2. Prefix to append in front of the title text.<BR>
+Example: `# ` to make the title a header.
+
 ## Installation
 
 ### Manual
