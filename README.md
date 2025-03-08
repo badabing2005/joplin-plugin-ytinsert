@@ -94,7 +94,7 @@ For demonstration purposes, I've chosen a random YouTube link about Joplin.
 
 Use the toolbar ![](/fa-video.png) or `Tools | Insert YouTube Video` menu or Keyboard shortcut `CTRL+J`
 
-4. The video will be inserted into the note:
+4. The video will be inserted into the note:  
 [![Video](https://img.youtube.com/vi/0I_OPQQiYVU/hqdefault.jpg)](https://www.youtube.com/watch?v=0I_OPQQiYVU)
 
 ## Installation
