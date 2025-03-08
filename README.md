@@ -92,12 +92,19 @@ For demonstration purposes, I've chosen a random YouTube link about Joplin.
 	1. Copy YouTube video URL or video ID to clipboard
 	2. Place the cursor where you want the video inserted.
 
-Use the toolbar ![](/fa-video.png) or `Tools | Insert YouTube Video` menu or Keyboard shortcut `CTRL+J`
-
-4. The video will be inserted into the note:  
+Use the toolbar ![](/fa-video.png) or `Tools | Insert YouTube Video` menu or Keyboard shortcut `CTRL+J`  
+The video will be inserted into the note:  
 [![Video](https://img.youtube.com/vi/0I_OPQQiYVU/hqdefault.jpg)](https://www.youtube.com/watch?v=0I_OPQQiYVU)
 
 ## Installation
+
+### Joplin plugin manager
+
+1. Open Joplin
+2. Go to `Tools` > `Options` > `Plugins`
+3. Search the plugin `Insert YouTube Video`
+4. Click `Install`
+5. Restart Joplin
 
 ### Manual
 
