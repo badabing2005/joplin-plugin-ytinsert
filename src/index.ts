@@ -24,10 +24,11 @@ async function main() {
             isEnum: true,
             advanced: false,
             label: 'Title Text Position',
-            description: 'Position of the title text relative to the video link (top or bottom)',
+            description: 'Position of the title text relative to the video link (top, bottom, or none)',
             options: {
                 'top': 'Top',
                 'bottom': 'Bottom',
+                'none': 'None',
             },
         },
         'textPrefix': {
@@ -59,8 +60,32 @@ async function main() {
             section: 'ytlinkSettings',
             public: true,
             label: 'Custom Format',
-            description: 'Define your custom format using ${img}, ${text}, ${url}, and ${id} variables. Only used when "Custom Format" is selected above.',
+            description: 'Define your custom format using ${img}, ${text}, ${url}, ${id}, ${description} and ${newline} variables. Only used when "Custom Format" is selected above.',
             advanced: false,
+        },
+        'preferredImageResolution': {
+            value: 'maxresdefault.jpg',
+            type: SettingItemType.String,
+            section: 'ytlinkSettings',
+            public: true,
+            isEnum: true,
+            advanced: false,
+            label: 'Preferred Image Resolution',
+            description: 'Select the preferred image resolution for the YouTube thumbnail',
+            options: {
+                'maxresdefault.jpg': 'Max Resolution',
+                'hqdefault.jpg': 'High Quality',
+                'sddefault.jpg': 'Standard Definition',
+                'mqdefault.jpg': 'Medium Quality',
+            },
+        },
+        'includeDescription': {
+            value: false,
+            type: SettingItemType.Bool,
+            section: 'ytlinkSettings',
+            public: true,
+            label: 'Include Description',
+            description: 'Include the video description after the video link',
         },
     });
 
@@ -80,46 +105,48 @@ async function main() {
             if (selectedText) {
                 const videoId = extractVideoId(selectedText);
                 const title = escapeMarkdown(await fetchVideoTitle(videoId));
+                const description = escapeMarkdown(await fetchVideoDescription(videoId));
                 const textPosition = await joplin.settings.value('textPosition');
                 const textPrefix = await joplin.settings.value('textPrefix');
                 const formatType = await joplin.settings.value('formatType');
                 const customFormat = await joplin.settings.value('customFormat');
+                const preferredImageResolution = await joplin.settings.value('preferredImageResolution');
+                const includeDescription = await joplin.settings.value('includeDescription');
 
                 // Determine if it's a shorts URL or regular video
                 const isShorts = selectedText.includes('youtube.com/shorts/');
                 const videoUrl = isShorts
                     ? `https://www.youtube.com/shorts/${videoId}`
                     : `https://www.youtube.com/watch?v=${videoId}`;
-                const imageUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                const imageUrl = await getValidImageUrl(videoId, preferredImageResolution);
 
                 let markdown;
+                let pre_text = '';
+                let post_text = '';
+                if (textPosition === 'top') {
+                    pre_text = `${textPrefix}${title}\n`;
+                } else if (textPosition === 'bottom') {
+                    post_text = `\n${textPrefix}${title}`;
+                }
 
                 if (formatType === 'standard') {
-                    if (textPosition === 'top') {
-                        markdown = `${textPrefix}${title}\n[![Video](${imageUrl})](${videoUrl})\n`;
-                    } else {
-                        markdown = `[![Video](${imageUrl})](${videoUrl})\n${textPrefix}${title}`;
-                    }
+                    markdown = `${pre_text}[![Video](${imageUrl})](${videoUrl})${post_text}`;
                 } else if (formatType === 'next') {
-                    if (textPosition === 'top') {
-                        markdown = `${textPrefix}${title}\n[${title} <img src="${imageUrl}" alt="Video" width="462" height="260" class="jop-noMdConv">](${videoUrl})\n`;
-                    } else {
-                        markdown = `[${title} <img src="${imageUrl}" alt="Video" width="462" height="260" class="jop-noMdConv">](${videoUrl})\n${textPrefix}${title}`;
-                    }
+                    markdown = `${pre_text}[${title} <img src="${imageUrl}" alt="Video" width="462" height="260" class="jop-noMdConv">](${videoUrl})${post_text}`;
                 } else if (formatType === 'custom') {
                     // Replace variables for custom format
                     markdown = customFormat
                         .replace(/\${img}/g, imageUrl)
                         .replace(/\${text}/g, title)
                         .replace(/\${url}/g, videoUrl)
-                        .replace(/\${id}/g, videoId);
+                        .replace(/\${id}/g, videoId)
+                        .replace(/\${newline}/g, '\n')
+                        .replace(/\${description}/g, description);
+                    markdown = `${pre_text}${markdown}${post_text}`;
+                }
 
-                    // Add text prefix if needed
-                    if (textPosition === 'top') {
-                        markdown = `${textPrefix}${title}\n${markdown}`;
-                    } else if (textPosition === 'bottom') {
-                        markdown = `${markdown}\n${textPrefix}${title}`;
-                    }
+                if (includeDescription) {
+                    markdown += `\n\n${description}`;
                 }
 
                 await joplin.commands.execute('replaceSelection', markdown);
@@ -159,6 +186,30 @@ async function fetchVideoTitle(videoId: string): Promise<string> {
         console.error('Error fetching video title:', error);
         return 'Unknown title';
     }
+}
+
+async function fetchVideoDescription(videoId: string): Promise<string> {
+    try {
+        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        const text = await response.text();
+        const descriptionMatch = text.match(/"shortDescription":"([^"]*)"/);
+        return descriptionMatch ? descriptionMatch[1].replace(/\\n/g, '\n') : 'No description available';
+    } catch (error) {
+        console.error('Error fetching video description:', error);
+        return 'No description available';
+    }
+}
+
+async function getValidImageUrl(videoId: string, preferredResolution: string): Promise<string> {
+    const resolutions = [preferredResolution, 'maxresdefault.jpg', 'hqdefault.jpg', 'sddefault.jpg', 'mqdefault.jpg'];
+    for (const resolution of resolutions) {
+        const imageUrl = `https://img.youtube.com/vi/${videoId}/${resolution}`;
+        const response = await fetch(imageUrl);
+        if (response.ok) {
+            return imageUrl;
+        }
+    }
+    return `https://img.youtube.com/vi/${videoId}/default.jpg`; // Fallback to default image
 }
 
 joplin.plugins.register({
